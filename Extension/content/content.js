@@ -6,9 +6,20 @@ const scoreboard = (function () {
   let colorTeamA = '255,0,0';
   let colorTeamB = '0,255,0';
 
-  $(window).on('beforeunload', function () {
-    socket.close();
-  });
+  // Cleanup resources: close websocket and clear intervals
+  function cleanup() {
+    try {
+      if (ws) ws.close();
+    } catch (err) {
+      // ignore
+    }
+    if (updateInterval) {
+      clearInterval(updateInterval);
+      updateInterval = null;
+    }
+  }
+
+  $(window).on('beforeunload', cleanup);
 
   function _connect() {
     ws = new ReconnectingWebSocket(server);
@@ -19,7 +30,6 @@ const scoreboard = (function () {
     };
 
     ws.onclose = function (event) {
-      clearInterval(updateInterval);
       $('#scoreboardConnectionStatus').css('fill', 'darkred');
     };
 
