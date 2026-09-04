@@ -63,6 +63,24 @@ const scoreboard = (function () {
     return result ? parseInt(result[1], 16) + ',' + parseInt(result[2], 16) + ',' + parseInt(result[3], 16) : null;
   }
 
+  // Safely trigger a click on a target. Accepts a DOM element, a jQuery object, or a selector.
+  // Tries to call the native `click()` on the first element and falls back to jQuery's `trigger('click')`.
+  function safeClick(target) {
+    if (!target) return;
+    var $el = (target instanceof jQuery) ? target : $(target);
+    if (!$el || $el.length === 0) return;
+    var dom = $el[0];
+    try {
+      if (typeof dom.click === 'function') {
+        dom.click();
+        return;
+      }
+    } catch (err) {
+      // fall through to jQuery trigger
+    }
+    $el.trigger('click');
+  }
+
   function _init() {
     $('.leftSide .teamName').append('<input type="color" class="colorPicker" id="changeColorTeamA" value="#ff0000"/>');
     $('.rightSide .teamName').append('<input type="color" class="colorPicker" id="changeColorTeamB" value="#00ff00"/>');
@@ -78,6 +96,53 @@ const scoreboard = (function () {
       colorTeamB = '0,255,0';
       $('#changeColorTeamA').value = '#ff0000';
       $('#changeColorTeamB').value = '#00ff00';
+    });
+
+    // Keyboard shortcuts:
+    // - Space: start/time-out/resume
+    // - Enter: refresh shotclock
+    // - Plus (`+`): play/pause of shotclock
+
+    $(document).on('keydown', function (e) {
+      const key = e.which || e.keyCode;
+
+      const active = document.activeElement;
+      // Don't trigger when typing in inputs, textareas or contenteditable elements
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+
+      // Space: trigger match control button click
+      if (key === 32) { // 32 = Space
+        const btn = $('#matchControlButton');
+        if (btn.length === 0) return;
+        e.preventDefault();
+        safeClick(btn);
+        return;
+      }
+
+      // Enter: trigger visible .fa-refresh
+      if (key === 13 || e.key === 'Enter') { // 13 = Enter
+        e.preventDefault();
+        const refresh = $('.fa-refresh:visible').first();
+        if (refresh.length > 0) {
+          safeClick(refresh);
+          return;
+        }
+      }
+
+      // Plus: trigger visible shot clock play/pause child (.fa-play or .fa-pause)
+      // Handle '+': e.key === '+' or key codes (187 with Shift, 107 on numpad)
+      if (e.key === '+' || (key === 187 && e.shiftKey) || key === 107) {
+        e.preventDefault();
+        const playChild = $('.shotClock').has('.fa-play:visible').find('.fa-play:visible').first();
+        const pauseChild = $('.shotClock').has('.fa-pause:visible').find('.fa-pause:visible').first();
+        let el = null;
+        if (playChild.length > 0) el = playChild[0];
+        else if (pauseChild.length > 0) el = pauseChild[0];
+
+        if (!el) return;
+        safeClick(el);
+        return;
+      }
     });
 
     $('#connectivityIndicator .container').append(
