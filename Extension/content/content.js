@@ -5,6 +5,7 @@ const scoreboard = (function () {
   let updateInterval;
   let colorTeamA = '255,0,0';
   let colorTeamB = '0,255,0';
+  let isTeamsSwitched = true;
 
   // Cleanup resources: close websocket and clear intervals
   function cleanup() {
@@ -47,7 +48,7 @@ const scoreboard = (function () {
           color: colorTeamB
         };
 
-        if ($('#switchteams').prop('checked')) {
+        if (isTeamsSwitched) {
           msg += `ScoreL=${teamBData.score};ColorL=${teamBData.color};`;
           msg += `ScoreR=${teamAData.score};ColorR=${teamAData.color};`;
         } else {
@@ -106,6 +107,7 @@ const scoreboard = (function () {
       colorTeamB = '0,255,0';
       $('#changeColorTeamA').value = '#ff0000';
       $('#changeColorTeamB').value = '#00ff00';
+      isTeamsSwitched = true;
     });
 
     // Keyboard shortcuts:
@@ -158,10 +160,6 @@ const scoreboard = (function () {
     $('#connectivityIndicator .container').append(
       `<div id="scoreboardConnectionStatus" class="scoreboardConnectionStatus knlTopMenu knlTopMenuSmall hidden-xs hidden-inApp" title="${getConnectionStatusLabel()}"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"> <path d="M176 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h16V98.4C92.3 113.8 16 200 16 304c0 114.9 93.1 208 208 208s208-93.1 208-208c0-41.8-12.3-80.7-33.5-113.2l24.1-24.1c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L355.7 143c-28.1-23-62.2-38.8-99.7-44.6V64h16c17.7 0 32-14.3 32-32s-14.3-32-32-32H224 176zm72 192V320c0 13.3-10.7 24-24 24s-24-10.7-24-24V192c0-13.3 10.7-24 24-24s24 10.7 24 24z" /> </svg> </div>`
     );
-    $('#connectivityIndicator .container').append(
-      `<div class="knlTopMenu"><label><input type="checkbox" id="switchteams" /><span id="switchLabel">${getSwitchTeamsLabel()}</span></label></div>`
-    );
-
     const finishConfirmDialog = `<div id="confirm-finish" title="${getConfirmDialogText()}">`;
     $('body').append(finishConfirmDialog);
 
@@ -174,10 +172,10 @@ const scoreboard = (function () {
 
   function afterViewUpdate() {
     const sideSwitcher = $('#mainSection .sideSwitcher');
-    // Only init side switcher, when there is one and it's not already been initialized
+    // Toggle the isSwitchedTeams scoreboard flag independently from the checkbox UI.
     if (sideSwitcher.length > 0 && sideSwitcher.data(dataKeyInitDone) !== true) {
       sideSwitcher.data(dataKeyInitDone, true).on('click', function () {
-        $('#switchteams').click();
+        isTeamsSwitched = !isTeamsSwitched;
       });
     }
 
